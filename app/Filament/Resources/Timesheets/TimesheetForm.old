@@ -1,0 +1,85 @@
+<?php
+
+namespace App\Filament\Resources\Timesheets\Schemas;
+
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Placeholder;
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Utilities\Get;
+use Carbon\Carbon; // Added for automatic date calculations
+
+class TimesheetForm
+{
+    public static function configure(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                Select::make('employee_id')
+                    ->relationship(
+                        name: 'employee',
+                        titleAttribute: 'first_name', // Tells Filament to look at a real column for sorting/searching
+                    )
+                    ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->first_name} {$record->last_name}") // Renders full name visually!
+                    ->searchable(['first_name', 'last_name']) // Allows searching both columns safely
+                    ->preload()
+                    ->required()
+                    ->label('Employee'),
+                    
+                Select::make('week_ending_date')
+                    ->label('Week Ending Date')
+                    ->required()
+                    ->options(function () {
+                        $options = [];
+                        
+                        // Find the upcoming Friday, or use this Friday if it's already later in the cycle
+                        $currentFriday = Carbon::parse('next friday');
+                        if ($currentFriday->diffInDays(Carbon::now()) > 6) {
+                            $currentFriday = Carbon::parse('this friday');
+                        }
+
+                        // Generate the last 6 valid consecutive Fridays (covering roughly 1.5 months of bi-weekly entries)
+                        for ($i = 0; $i < 6; $i++) {
+                            $dateString = $currentFriday->copy()->subWeeks($i)->toDateString();
+                            $formattedLabel = $currentFriday->copy()->subWeeks($i)->format('l, d F Y');
+                            
+                            $options[$dateString] = $formattedLabel;
+                        }
+
+                        return $options;
+                    })
+                    ->placeholder('Select the specific payroll week ending...')
+                    ->searchable()
+                    ->preload(),
+                    
+                TextInput::make('regular_hours')
+                    ->required()
+                    ->numeric()
+                    ->default(0)
+                    ->minValue(0)
+                    ->live(),
+                    
+                TextInput::make('overtime_hours')
+                    ->required()
+                    ->numeric()
+                    ->default(0)
+                    ->minValue(0)
+                    ->live(),
+
+                Placeholder::make('total_hours')
+                    ->label('Total Accumulated Hours')
+                    ->content(function (Get $get) {
+                        $regular = (float) ($get('regular_hours') ?? 0);
+                        $overtime = (float) ($get('overtime_hours') ?? 0);
+                        
+                        $total = max(0, $regular + $overtime);
+                        
+                        return $total . ' hours';
+                    }),
+                    
+                Textarea::make('notes')
+                    ->columnSpanFull(),
+            ]);
+    }
+}
