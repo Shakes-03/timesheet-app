@@ -20,8 +20,10 @@ class EmployeesTable
                     ->searchable(),
                 TextColumn::make('employee_number')
                     ->searchable(),
-                TextColumn::make('department')
-                    ->searchable(),
+                TextColumn::make('trade_occupation') 
+                    ->label('Trade Occupation')
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -37,7 +39,7 @@ class EmployeesTable
             ->recordActions([
                 EditAction::make(),
             ])
-            ->toolbarActions([
+            ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),

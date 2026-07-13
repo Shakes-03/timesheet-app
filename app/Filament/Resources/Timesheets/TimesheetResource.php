@@ -20,7 +20,7 @@ class TimesheetResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static ?string $recordTitleAttribute = 'week_ending_date';
+    protected static ?string $recordTitleAttribute = 'date';
 
     public static function form(Schema $schema): Schema
     {
@@ -29,7 +29,8 @@ class TimesheetResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return TimesheetsTable::configure($table);
+      \Illuminate\Support\Facades\Cache::forget('filament-excel:exports:1');
+      return TimesheetsTable::configure($table);
     }
 
     public static function getRelations(): array

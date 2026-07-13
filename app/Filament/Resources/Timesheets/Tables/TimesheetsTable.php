@@ -2,19 +2,26 @@
 
 namespace App\Filament\Resources\Timesheets\Tables;
 
-use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\Filter;
 use Filament\Forms\Components\DatePicker;
-use Filament\Tables\Columns\Summarizers\Sum;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use pxlrbt\FilamentExcel\Exports\ExcelExport;
+use pxlrbt\FilamentExcel\Columns\Column;
+use App\Exports\PayrollExport;
 
 class TimesheetsTable
 {
     public static function configure(Table $table): Table
     {
+        // TEMPORARY: Clear the corrupt SQLite cache row from your database table
+        Cache::forget('laravel-cache-filament-excel:exports:1');
+
         return $table
             ->columns([
                 TextColumn::make('employee.first_name')
@@ -23,9 +30,14 @@ class TimesheetsTable
                     ->searchable(['first_name', 'last_name'])
                     ->sortable(),
                     
-                TextColumn::make('date')
-                    ->label('Date Worked')
-                    ->date('d/m/Y')
+                TextColumn::make('employee.employee_number')
+                    ->label('Employee Number')
+                    ->searchable()
+                    ->sortable(),
+
+                TextColumn::make('employee.trade_occupation')
+                    ->label('Trade')
+                    ->searchable()
                     ->sortable(),
                     
                 TextColumn::make('normal_time_hours')
@@ -33,25 +45,39 @@ class TimesheetsTable
                     ->numeric()
                     ->sortable(),
                     
-                TextColumn::make('overtime_1_5_hours')
-                    ->label('1.5x')
+                TextColumn::make('overtime_1_3_3_hours')
+                    ->label('1.33x')
                     ->numeric()
                     ->sortable(),
 
-                TextColumn::make('saturday_hours')
-                    ->label('SAT')
+                TextColumn::make('overtime_1_5_hours')
+                    ->label('1.5x')
                     ->numeric()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->sortable(), 
 
-                TextColumn::make('sunday_2_0_hours')
-                    ->label('SUN')
+                TextColumn::make('overtime_2_0_hours')
+                    ->label('2.0x')
                     ->numeric()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->sortable(), 
+
+                TextColumn::make('overtime_2_5_hours')
+                    ->label('2.5x')
+                    ->numeric()
+                    ->sortable(),
+
+                TextColumn::make('LOA_QTY')
+                    ->label('LOA QTY')
+                    ->money('ZAR')
+                    ->sortable(),
 
                 TextColumn::make('travelling_allowance')
                     ->label('Travel (R)')
                     ->money('ZAR')
                     ->sortable(),
+
+                TextColumn::make('notes')
+                    ->label('Shift Notes')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('employee_id')
@@ -74,13 +100,14 @@ class TimesheetsTable
                     })
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()
-                        ->requiresConfirmation(),
-                ]),
+                ExportBulkAction::make('export_payroll')
+                    ->label('Export Bi-Weekly Payroll')
+                    ->exports([
+                        PayrollExport::make(),
+                    ]),
             ]);
     }
 }

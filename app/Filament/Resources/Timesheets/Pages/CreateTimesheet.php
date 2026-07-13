@@ -12,21 +12,22 @@ class CreateTimesheet extends CreateRecord
     protected static string $resource = TimesheetResource::class;
 
     /**
-      *Runs before the record is saved to check for duplicates
-    
+     * Runs before the record is saved to check for daily duplicate logs
      */
     protected function beforeCreate(): void
     {
-        $data = $this->form->getState();
+        // Read the incoming form state array directly
+        $data = $this->data;
 
+        // Check if a timesheet already exists for this specific employee on this specific day
         $exists = Timesheet::where('employee_id', $data['employee_id'])
-            ->where('week_ending_date', $data['week_ending_date'])
+            ->where('date', $data['date'])
             ->exists();
 
         if ($exists) {
             Notification::make()
                 ->title('Duplicate Entry Detected')
-                ->body('An entry for this employee and week already exists. Please find the record in the list and use the "Edit" button instead.')
+                ->body('A timesheet entry for this employee on this specific date already exists. Please find the existing record in the list and edit it instead.')
                 ->danger()
                 ->send();
 
@@ -35,7 +36,7 @@ class CreateTimesheet extends CreateRecord
     }
 
     /**
-     * Redirects
+     * Redirects to the index list after saving
      */
     protected function getRedirectUrl(): string
     {

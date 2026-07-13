@@ -7,14 +7,15 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Placeholder;
-use Filament\Forms\Components\Section;
-use Filament\Forms\Components\Grid;
+use Filament\Forms\Get;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Utilities\Get;
+use Illuminate\Validation\Rules\Unique;
 
 class TimesheetForm
 {
-    public static function configure(Schema $schema): Schema
+    public static function configure(\Filament\Schemas\Schema $schema): \Filament\Schemas\Schema
     {
         return $schema
             ->components([
@@ -36,17 +37,50 @@ class TimesheetForm
                             ->label('Date Worked')
                             ->native(false)
                             ->displayFormat('l, d F Y')
-                            ->closeOnDateSelect()
-                            ->required(),
-                    ]),
+                            ->required()
+                            ->rules([
+                                fn (\Filament\Schemas\Components\Utilities\Get $get, $record) => function (string $attribute, $value, \Closure $fail) use ($get, $record) {
+                                    $employeeId = $get('employee_id');
+                                    
+                                    if (! $employeeId || ! $value) {
+                                        return;
+                                    }
 
-                // Section 2: Core Shift Hours
-                Section::make('Standard & Weekend Shifts')
+                                    // Cleanly format input value to match database plain text date format
+                                    $formattedDate = \Carbon\Carbon::parse($value)->format('Y-m-d');
+
+                                    $query = \DB::table('timesheets')
+                                        ->where('employee_id', $employeeId)
+                                        ->whereDate('date', $formattedDate);
+
+                                    // If editing an existing record, exclude it from validation matches
+                                    if ($record) {
+                                        $query->where('id', '!=', $record->id);
+                                    }
+
+                                    if ($query->exists()) {
+                                        $fail("The selected employee already has a timesheet entry for this date.");
+                                    }
+                                },
+                            ])
+                         ->validationAttribute('date for this employee'),
+                  ]),
+
+                
+                Section::make('Standard Shifts')
                     ->compact()
-                    ->columns(4)
+                    ->columns(5)
                     ->schema([
                         TextInput::make('normal_time_hours')
                             ->label('Normal Time (NT)')
+                            ->numeric()
+                            ->default(0)
+                            ->minValue(0)
+                            ->dehydrateStateUsing(fn ($state) => $state ?? 0)
+                            ->live(),
+
+                        TextInput::make('overtime_1_3_3_hours')
+                            ->label('Overtime (1.33x)')
                             ->numeric()
                             ->default(0)
                             ->minValue(0)
@@ -59,43 +93,30 @@ class TimesheetForm
                             ->minValue(0)
                             ->live(),
 
-                        TextInput::make('saturday_hours')
-                            ->label('Saturday (SAT)')
+                        TextInput::make('overtime_2_0_hours')
+                            ->label('Overtime (2.0x)')
                             ->numeric()
                             ->default(0)
                             ->minValue(0)
                             ->live(),
 
-                        TextInput::make('sunday_2_0_hours')
-                            ->label('Sunday (SUN-2.0)')
+                            TextInput::make('overtime_2_5_hours')
+                            ->label('Overtime (2.5x)')
                             ->numeric()
                             ->default(0)
                             ->minValue(0)
                             ->live(),
                     ]),
 
-                // Section 3: Public Holidays & Allowances
-                Section::make('Public Holidays & Travel Allowances')
+                
+                Section::make('LOA & Travel Allowances')
                     ->compact()
-                    ->columns(4)
+                    ->columns(2)
                     ->schema([
-                        TextInput::make('pph_normal_time_hours')
-                            ->label('PPH Normal Time')
+                        TextInput::make('LOA_QTY')
+                            ->label('LOA Quantity (R)')
                             ->numeric()
-                            ->default(0)
-                            ->minValue(0)
-                            ->live(),
-
-                        TextInput::make('pph_overtime_1_33_hours')
-                            ->label('PPH Overtime (1.33x)')
-                            ->numeric()
-                            ->default(0)
-                            ->minValue(0)
-                            ->live(),
-
-                        TextInput::make('pph_overtime_2_5_hours')
-                            ->label('PPH Overtime (2.5x)')
-                            ->numeric()
+                            ->prefix('R')
                             ->default(0)
                             ->minValue(0)
                             ->live(),
@@ -108,27 +129,27 @@ class TimesheetForm
                             ->minValue(0),
                     ]),
 
-                // Section 4: Rolling Summary & Dynamic Calculation
+                
                 Grid::make(1)
                     ->schema([
                         Placeholder::make('total_hours')
                             ->label('Total Hours Accumulated For This Day')
-                            ->content(function (Get $get) {
+                            ->content(function (\Filament\Schemas\Components\Utilities\Get $get) {
                                 $nt = (float) ($get('normal_time_hours') ?? 0);
-                                $ot15 = (float) ($get('overtime_1_5_hours') ?? 0);
-                                $sat = (float) ($get('saturday_hours') ?? 0);
-                                $sun20 = (float) ($get('sunday_2_0_hours') ?? 0);
-                                $pphnt = (float) ($get('pph_normal_time_hours') ?? 0);
-                                $pphot133 = (float) ($get('pph_overtime_1_33_hours') ?? 0);
-                                $pphot25 = (float) ($get('pph_overtime_2_5_hours') ?? 0);
+                                $ot15 = (float) ($get('overtime_1_3_3_hours') ?? 0);
+                                $sat = (float) ($get('overtime_1_5_hours') ?? 0);
+                                $sun20 = (float) ($get('overtime_2_0_hours') ?? 0);
+                                $pphnt = (float) ($get('overtime_2_5_hours') ?? 0);
+                                $pphot133 = (float) ($get('LOA_QTY') ?? 0);
+                                $pphot25 = (float) ($get('travelling_allowance') ?? 0);
 
-                                $total = $nt + $ot15 + $sat + $sun20 + $pphnt + $pphot133 + $pphot25;
+                                $total = $nt + $ot15 + $sat + $sun20 + $pphnt;
 
                                 return number_format($total, 2) . ' hours';
                             }),
 
                         Textarea::make('notes')
-                            ->label('Shift Notes / Project Details / Completion Reasons')
+                            ->label('Shift Notes Completion Reasons')
                             ->rows(3)
                             ->columnSpanFull(),
                     ]),
