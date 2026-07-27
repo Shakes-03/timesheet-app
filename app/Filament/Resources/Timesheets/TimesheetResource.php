@@ -17,11 +17,8 @@ use Filament\Tables\Table;
 class TimesheetResource extends Resource
 {
     protected static ?string $model = Timesheet::class;
-
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-
     protected static ?string $recordTitleAttribute = 'date';
-
     public static function form(Schema $schema): Schema
     {
         return TimesheetForm::configure($schema);

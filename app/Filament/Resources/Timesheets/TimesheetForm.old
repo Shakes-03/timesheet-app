@@ -8,7 +8,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Placeholder;
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Utilities\Get;
-use Carbon\Carbon; // Added for automatic date calculations
+use Carbon\Carbon; 
 
 class TimesheetForm
 {
@@ -32,14 +32,10 @@ class TimesheetForm
                     ->required()
                     ->options(function () {
                         $options = [];
-                        
-                        // Find the upcoming Friday, or use this Friday if it's already later in the cycle
                         $currentFriday = Carbon::parse('next friday');
                         if ($currentFriday->diffInDays(Carbon::now()) > 6) {
                             $currentFriday = Carbon::parse('this friday');
                         }
-
-                        // Generate the last 6 valid consecutive Fridays (covering roughly 1.5 months of bi-weekly entries)
                         for ($i = 0; $i < 6; $i++) {
                             $dateString = $currentFriday->copy()->subWeeks($i)->toDateString();
                             $formattedLabel = $currentFriday->copy()->subWeeks($i)->format('l, d F Y');

@@ -19,7 +19,6 @@ class TimesheetForm
     {
         return $schema
             ->components([
-                // Section 1: Header Assignment
                 Section::make('Assignment')
                     ->description('Select the worker and the specific calendar day for this log entry.')
                     ->compact()
@@ -45,21 +44,18 @@ class TimesheetForm
                                     if (! $employeeId || ! $value) {
                                         return;
                                     }
-
-                                    // Cleanly format input value to match database plain text date format
                                     $formattedDate = \Carbon\Carbon::parse($value)->format('Y-m-d');
 
                                     $query = \DB::table('timesheets')
                                         ->where('employee_id', $employeeId)
                                         ->whereDate('date', $formattedDate);
 
-                                    // If editing an existing record, exclude it from validation matches
                                     if ($record) {
                                         $query->where('id', '!=', $record->id);
                                     }
 
                                     if ($query->exists()) {
-                                        $fail("The selected employee already has a timesheet entry for this date.");
+                                        $fail("The selected employee already has a timesheet entry for this date."); //prevents duplicates
                                     }
                                 },
                             ])
@@ -143,13 +139,13 @@ class TimesheetForm
                                 $pphot133 = (float) ($get('LOA_QTY') ?? 0);
                                 $pphot25 = (float) ($get('travelling_allowance') ?? 0);
 
-                                $total = $nt + $ot15 + $sat + $sun20 + $pphnt;
+                                $total = $nt + $ot15 + $sat + $sun20 + $pphnt; //so that she can see the hours for the day and didnt add a zero at the end of a number making the hours wrong
 
                                 return number_format($total, 2) . ' hours';
                             }),
 
                         Textarea::make('notes')
-                            ->label('Shift Notes Completion Reasons')
+                            ->label('Shift Notes Completion Reasons') //for EOC dates or any other notes
                             ->rows(3)
                             ->columnSpanFull(),
                     ]),

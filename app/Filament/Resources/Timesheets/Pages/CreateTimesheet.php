@@ -16,10 +16,8 @@ class CreateTimesheet extends CreateRecord
      */
     protected function beforeCreate(): void
     {
-        // Read the incoming form state array directly
         $data = $this->data;
 
-        // Check if a timesheet already exists for this specific employee on this specific day
         $exists = Timesheet::where('employee_id', $data['employee_id'])
             ->where('date', $data['date'])
             ->exists();

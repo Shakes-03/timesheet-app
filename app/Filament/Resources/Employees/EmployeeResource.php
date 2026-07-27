@@ -15,13 +15,11 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 
 class EmployeeResource extends Resource
+
 {
     protected static ?string $model = Employee::class;
-
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-
     protected static ?string $recordTitleAttribute = 'last_name';
-
     public static function form(Schema $schema): Schema
     {
         return EmployeeForm::configure($schema);
@@ -40,11 +38,11 @@ class EmployeeResource extends Resource
     }
 
     public static function getPages(): array
-    {
-        return [
-            'index' => ListEmployees::route('/'),
-            'create' => CreateEmployee::route('/create'),
-            'edit' => EditEmployee::route('/{record}/edit'),
-        ];
-    }
+{
+    return [
+        'index' => Pages\ListEmployees::route('/'),
+        'create' => Pages\CreateEmployee::route('/create'),
+        'edit' => Pages\EditEmployee::route('/{record}/edit'),
+    ];
+}
 }

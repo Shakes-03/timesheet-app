@@ -12,16 +12,28 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('employees', function (Blueprint $table) {
-        // Drop the old department column safely if it exists
-        if (Schema::hasColumn('employees', 'department')) {
-            $table->dropColumn('department');
+            if (Schema::hasColumn('employees', 'department')) {
+                $table->dropColumn('department');
             }
 
-            $table->string('trade_occupation')->nullable();
-        $table->string('id_number', 13)->nullable();
-        $table->date('start_date')->nullable();
-    });
+            if (Schema::hasColumn('employees', 'trade_occupation')) {
+                $table->dropColumn('trade_occupation');
+            }
+            if (!Schema::hasColumn('employees', 'trade_id')) {
+                $table->foreignId('trade_id')
+                    ->nullable()
+                    ->constrained('trades')
+                    ->nullOnDelete();
+            }
 
+            if (!Schema::hasColumn('employees', 'id_number')) {
+                $table->string('id_number', 13)->nullable();
+            }
+
+            if (!Schema::hasColumn('employees', 'start_date')) {
+                $table->date('start_date')->nullable();
+            }
+        });
     }
 
     /**
@@ -29,9 +41,13 @@ return new class extends Migration
      */
     public function down(): void
     {
-      Schema::table('employees', function (Blueprint $table) {
-        $table->dropColumn(['trade_occupation', 'id_number', 'start_date']);
-        $table->string('department')->nullable();
-    });  
+        Schema::table('employees', function (Blueprint $table) {
+            if (Schema::hasColumn('employees', 'trade_id')) {
+                $table->dropForeign(['trade_id']);
+                $table->dropColumn('trade_id');
+            }
+            $table->dropColumn(['id_number', 'start_date']);
+            $table->string('department')->nullable();
+        });  
     }
 };

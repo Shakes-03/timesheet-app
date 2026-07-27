@@ -19,7 +19,6 @@ class TimesheetsTable
 {
     public static function configure(Table $table): Table
     {
-        // TEMPORARY: Clear the corrupt SQLite cache row from your database table
         Cache::forget('laravel-cache-filament-excel:exports:1');
 
         return $table
@@ -35,7 +34,7 @@ class TimesheetsTable
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('employee.trade_occupation')
+                TextColumn::make('employee.trade.name')
                     ->label('Trade')
                     ->searchable()
                     ->sortable(),

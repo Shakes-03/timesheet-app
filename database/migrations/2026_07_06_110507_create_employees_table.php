@@ -16,7 +16,13 @@ return new class extends Migration
             $table->string('first_name');
             $table->string('last_name');
             $table->string('employee_number')->unique()->nullable();
-            $table->string('department')->nullable();
+            $table->string('trade_occupation')->nullable();
+            $table->string('id_number')->nullable();
+            $table->date('start_date')->nullable();
+            
+            // Adding the base hourly rate for payroll calculations
+            $table->decimal('hourly_rate', 10, 2)->default(0.00);
+            
             $table->timestamps();
         });
     }
