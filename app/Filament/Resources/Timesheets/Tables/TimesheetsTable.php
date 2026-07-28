@@ -12,11 +12,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 use App\Exports\PayrollExport;
-
-// Correct Filament Table Action Namespaces
-use Filament\Tables\Actions\DeleteAction;
-use Filament\Tables\Actions\DeleteBulkAction;
-use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
 
 class TimesheetsTable
 {
@@ -64,7 +62,6 @@ class TimesheetsTable
 
                 TextColumn::make('overtime_2_5_hours')
                     ->label('2.5x')
-                    ->numeric()
                     ->sortable(),
 
                 TextColumn::make('LOA_QTY')
@@ -102,17 +99,17 @@ class TimesheetsTable
                     })
             ])
             ->actions([
-                DeleteAction::make(),
-            ])
+                EditAction::make(),
+           ])
             ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
-                    ExportBulkAction::make('export_payroll')
-                        ->label('Export Bi-Weekly Payroll')
-                        ->exports([
-                            PayrollExport::make(),
-                        ]),
                 ]),
+                ExportBulkAction::make('export_payroll')
+                    ->label('Export Bi-Weekly Payroll')
+                    ->exports([
+                        PayrollExport::make(),
+                    ]),
             ]);
     }
 }
