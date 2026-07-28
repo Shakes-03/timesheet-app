@@ -11,9 +11,12 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
-use pxlrbt\FilamentExcel\Exports\ExcelExport;
-use pxlrbt\FilamentExcel\Columns\Column;
 use App\Exports\PayrollExport;
+
+// Correct Filament Table Action Namespaces
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\BulkActionGroup;
 
 class TimesheetsTable
 {
@@ -99,14 +102,17 @@ class TimesheetsTable
                     })
             ])
             ->actions([
-                
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                ExportBulkAction::make('export_payroll')
-                    ->label('Export Bi-Weekly Payroll')
-                    ->exports([
-                        PayrollExport::make(),
-                    ]),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                    ExportBulkAction::make('export_payroll')
+                        ->label('Export Bi-Weekly Payroll')
+                        ->exports([
+                            PayrollExport::make(),
+                        ]),
+                ]),
             ]);
     }
 }
