@@ -8,6 +8,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Schema;
@@ -115,14 +116,20 @@ class TimesheetForm
                             ->prefix('R')
                             ->default(0)
                             ->minValue(0)
-                            ->live(),
+                            ->readOnly()
+                            ->dehydrated(),
 
                         TextInput::make('travelling_allowance')
                             ->label('Travel Allowance (R)')
                             ->numeric()
                             ->prefix('R')
                             ->default(0)
-                            ->minValue(0),
+                            ->minValue(0)
+                            ->live(onBlur: false)
+                            ->afterStateUpdated(function (\Filament\Schemas\Components\Utilities\Set $set, $state) {
+                                $travel = (float) ($state ?? 0);
+                                $set('LOA_QTY', round($travel / 75, 2));
+                            }),
                     ]),
 
                 
