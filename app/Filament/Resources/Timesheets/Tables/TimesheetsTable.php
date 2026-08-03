@@ -79,6 +79,25 @@ class TimesheetsTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                SelectFilter::make('client')
+                    ->label('Client')
+                    ->options([
+                        'KEL' => 'KEL',
+                        'MIB' => 'MIB',
+                        'DGA' => 'DGA',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (empty($data['value'])) {
+                            return $query;
+                        }
+
+                        $prefix = $data['value'];
+
+                        return $query->whereHas('employee', function (Builder $q) use ($prefix) {
+                            $q->where('employee_number', 'like', $prefix . '%');
+                        });
+                    }),
+
                 SelectFilter::make('employee_id')
                     ->label('Filter by Employee')
                     ->relationship('employee', 'first_name')
@@ -108,7 +127,7 @@ class TimesheetsTable
                 ExportBulkAction::make('export_payroll')
                     ->label('Export Bi-Weekly Payroll')
                     ->exports([
-                        PayrollExport::make(),
+                        PayrollExport::make('payroll'), // <-- Pass the name parameter here
                     ]),
             ]);
     }
